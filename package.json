@@ -9,16 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "next": "15.4.3",
+    "pitchfinder": "^2.3.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "next": "15.4.3"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "@types/web": "^0.0.254",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
