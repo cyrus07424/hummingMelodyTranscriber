@@ -79,7 +79,8 @@ export default function RecordingMode() {
           }]);
         }
         
-        if (isRecording) {
+        // Continue collecting data while recording OR briefly after stopping to capture final notes
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
           animationRef.current = requestAnimationFrame(collectPitchData);
         }
       };
@@ -104,10 +105,7 @@ export default function RecordingMode() {
   };
 
   const stopRecording = () => {
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
-    }
+    setIsRecording(false);
     
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -118,18 +116,22 @@ export default function RecordingMode() {
       mediaRecorderRef.current.stop();
     }
     
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    
-    setIsRecording(false);
-    setIsAnalyzing(true);
-    
-    // Simulate analysis time
+    // Stop pitch collection after a brief delay to capture final notes
     setTimeout(() => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      
+      // For microphone recording, we don't need to simulate analysis since
+      // pitch data was collected in real-time. Just show results immediately.
       setIsAnalyzing(false);
-    }, 1000);
+    }, 500); // Small delay to capture any final audio data
   };
 
   const downloadAudio = () => {
@@ -284,7 +286,7 @@ export default function RecordingMode() {
           </div>
         )}
         
-        {pitchData.length > 0 && !isAnalyzing && (
+        {pitchData.length > 0 && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
               解析結果（{pitchData.length}個の音階データ）
@@ -293,7 +295,7 @@ export default function RecordingMode() {
           </div>
         )}
         
-        {!isRecording && pitchData.length === 0 && !isAnalyzing && (
+        {!isRecording && !isAnalyzing && pitchData.length === 0 && (
           <div className="text-center text-gray-500 dark:text-gray-400 py-8">
             <p className="mb-4">録音ボタンを押すか、音声ファイルをアップロードしてください</p>
             <div className="text-sm space-y-1">
