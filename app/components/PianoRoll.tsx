@@ -173,9 +173,28 @@ export default function PianoRoll({ pitchData }: PianoRollProps) {
     });
     
     if (nearestData) {
+      // Calculate tooltip position with bounds checking
+      const tooltipWidth = 120; // Approximate tooltip width
+      const tooltipHeight = 60; // Approximate tooltip height
+      const containerRect = canvas.getBoundingClientRect();
+      
+      let tooltipX = x + 10;
+      let tooltipY = y - 40;
+      
+      // Ensure tooltip doesn't go outside container bounds
+      if (tooltipX + tooltipWidth > containerRect.width) {
+        tooltipX = x - tooltipWidth - 10; // Position to the left of cursor
+      }
+      if (tooltipY < 0) {
+        tooltipY = y + 10; // Position below cursor
+      }
+      if (tooltipY + tooltipHeight > containerRect.height) {
+        tooltipY = y - tooltipHeight - 10; // Position above cursor
+      }
+      
       setTooltip({
-        x: event.clientX,
-        y: event.clientY,
+        x: tooltipX,
+        y: tooltipY,
         note: (nearestData as PitchData).note,
         frequency: (nearestData as PitchData).frequency,
         time: (nearestData as PitchData).time,
@@ -211,8 +230,8 @@ export default function PianoRoll({ pitchData }: PianoRollProps) {
         <div
           className="absolute z-10 bg-black text-white p-2 rounded text-sm pointer-events-none"
           style={{
-            left: tooltip.x - 60,
-            top: tooltip.y - 80
+            left: tooltip.x,
+            top: tooltip.y
           }}
         >
           <div className="font-semibold">{tooltip.note}</div>
