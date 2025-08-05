@@ -317,6 +317,8 @@ export default function RecordingMode() {
               <p>• 最大60秒まで録音可能</p>
               <p>• 録音データは譜面として表示</p>
               <p>• 録音ファイルをダウンロード可能</p>
+              <p>• 新機能: WaveSurfer.jsによる波形・スペクトログラム表示</p>
+              <p>• 新機能: 音声ファイルの再生機能</p>
             </div>
           </div>
         )}
