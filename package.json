@@ -12,7 +12,8 @@
     "next": "15.4.5",
     "pitchfinder": "^2.3.2",
     "react": "^19.0.0",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "wavesurfer.js": "^7.10.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

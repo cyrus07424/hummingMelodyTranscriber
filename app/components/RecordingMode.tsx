@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { setupAudioContext, getPitchFromBuffer, frequencyToNote, frequencyToMidi } from '../utils/pitchDetection';
 import PianoRoll from './PianoRoll';
+import WaveSurferComponent from './WaveSurfer';
 
 interface PitchData {
   time: number;
@@ -16,6 +17,7 @@ export default function RecordingMode() {
   const [recordingTime, setRecordingTime] = useState(0);
   const [pitchData, setPitchData] = useState<PitchData[]>([]);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [error, setError] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
@@ -32,6 +34,7 @@ export default function RecordingMode() {
       setError('');
       setPitchData([]);
       setAudioBlob(null);
+      setUploadedFile(null);
       
       const { audioContext, mediaStream, analyser, dataArray } = await setupAudioContext();
       
@@ -155,6 +158,8 @@ export default function RecordingMode() {
       setError('');
       setIsAnalyzing(true);
       setPitchData([]);
+      setAudioBlob(null);
+      setUploadedFile(file);
       
       // Create audio context for file analysis
       const audioContext = new AudioContext();
@@ -287,10 +292,20 @@ export default function RecordingMode() {
         )}
         
         {pitchData.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
               解析結果（{pitchData.length}個の音階データ）
             </h3>
+            
+            {/* Audio Waveform and Playback */}
+            {(audioBlob || uploadedFile) && (
+              <WaveSurferComponent 
+                audioBlob={audioBlob} 
+                audioUrl={uploadedFile ? URL.createObjectURL(uploadedFile) : undefined}
+              />
+            )}
+            
+            {/* Piano Roll Visualization */}
             <PianoRoll pitchData={pitchData} />
           </div>
         )}
@@ -302,6 +317,8 @@ export default function RecordingMode() {
               <p>• 最大60秒まで録音可能</p>
               <p>• 録音データは譜面として表示</p>
               <p>• 録音ファイルをダウンロード可能</p>
+              <p>• 新機能: WaveSurfer.jsによる波形・スペクトログラム表示</p>
+              <p>• 新機能: 音声ファイルの再生機能</p>
             </div>
           </div>
         )}
