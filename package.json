@@ -20,7 +20,7 @@
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/web": "^0.0.259",
+    "@types/web": "^0.0.260",
     "eslint": "9.33.0",
     "eslint-config-next": "15.4.6",
     "tailwindcss": "^4",
