@@ -31,6 +31,20 @@ export default function PianoRoll({ pitchData }: PianoRollProps) {
     visible: false
   });
 
+  // Zoom state
+  const [zoomRange, setZoomRange] = useState<{
+    minMidi: number | null;
+    maxMidi: number | null;
+  }>({
+    minMidi: null,
+    maxMidi: null
+  });
+
+  // Drag selection state
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [dragCurrent, setDragCurrent] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
   useEffect(() => {
     if (!pitchData.length) return;
     
@@ -54,8 +68,12 @@ export default function PianoRoll({ pitchData }: PianoRollProps) {
     
     // Calculate ranges
     const maxTime = Math.max(...pitchData.map(d => d.time));
-    const minMidi = Math.min(...pitchData.map(d => d.midi));
-    const maxMidi = Math.max(...pitchData.map(d => d.midi));
+    const dataMinMidi = Math.min(...pitchData.map(d => d.midi));
+    const dataMaxMidi = Math.max(...pitchData.map(d => d.midi));
+    
+    // Use zoom range if set, otherwise use data range
+    const minMidi = zoomRange.minMidi ?? dataMinMidi;
+    const maxMidi = zoomRange.maxMidi ?? dataMaxMidi;
     const midiRange = Math.max(maxMidi - minMidi, 24); // At least 2 octaves
     
     // Piano keys setup
@@ -138,8 +156,24 @@ export default function PianoRoll({ pitchData }: PianoRollProps) {
       const noteName = noteNames[midi % 12] + octave;
       ctx.fillText(noteName, 5, y + 3);
     }
+
+    // Draw drag selection rectangle
+    if (isDragging && dragStart && dragCurrent) {
+      const startX = Math.min(dragStart.x, dragCurrent.x);
+      const startY = Math.min(dragStart.y, dragCurrent.y);
+      const selWidth = Math.abs(dragCurrent.x - dragStart.x);
+      const selHeight = Math.abs(dragCurrent.y - dragStart.y);
+      
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.strokeRect(startX, startY, selWidth, selHeight);
+      ctx.fillStyle = 'rgba(59, 130, 246, 0.1)';
+      ctx.fillRect(startX, startY, selWidth, selHeight);
+      ctx.setLineDash([]);
+    }
     
-  }, [pitchData]);
+  }, [pitchData, zoomRange, isDragging, dragStart, dragCurrent]);
 
   const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -209,6 +243,93 @@ export default function PianoRoll({ pitchData }: PianoRollProps) {
     setTooltip(prev => ({ ...prev, visible: false }));
   };
 
+  const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !pitchData.length) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    setDragStart({ x, y });
+    setDragCurrent({ x, y });
+    setIsDragging(true);
+    setTooltip(prev => ({ ...prev, visible: false }));
+  };
+
+  const handleMouseMoveWhileDragging = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging || !dragStart) {
+      handleMouseMove(event);
+      return;
+    }
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    setDragCurrent({ x, y });
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging || !dragStart || !dragCurrent || !pitchData.length) {
+      setIsDragging(false);
+      setDragStart(null);
+      setDragCurrent(null);
+      return;
+    }
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    
+    // Calculate selected area
+    const minX = Math.min(dragStart.x, dragCurrent.x);
+    const maxX = Math.max(dragStart.x, dragCurrent.x);
+    const minY = Math.min(dragStart.y, dragCurrent.y);
+    const maxY = Math.max(dragStart.y, dragCurrent.y);
+    
+    // Minimum selection size (avoid accidental clicks)
+    if (Math.abs(maxX - minX) < 20 || Math.abs(maxY - minY) < 20) {
+      setIsDragging(false);
+      setDragStart(null);
+      setDragCurrent(null);
+      return;
+    }
+    
+    // Calculate MIDI range from selection
+    const dataMinMidi = Math.min(...pitchData.map(d => d.midi));
+    const dataMaxMidi = Math.max(...pitchData.map(d => d.midi));
+    const currentMinMidi = zoomRange.minMidi ?? dataMinMidi;
+    const currentMaxMidi = zoomRange.maxMidi ?? dataMaxMidi;
+    const currentMidiRange = Math.max(currentMaxMidi - currentMinMidi, 24);
+    
+    const keyHeight = rect.height / currentMidiRange;
+    
+    // Convert Y coordinates to MIDI values (inverted because Y increases downward)
+    const selectedMaxMidi = Math.round(currentMaxMidi - minY / keyHeight);
+    const selectedMinMidi = Math.round(currentMaxMidi - maxY / keyHeight);
+    
+    // Ensure valid range
+    if (selectedMinMidi < selectedMaxMidi) {
+      setZoomRange({
+        minMidi: Math.max(selectedMinMidi, dataMinMidi),
+        maxMidi: Math.min(selectedMaxMidi, dataMaxMidi)
+      });
+    }
+    
+    setIsDragging(false);
+    setDragStart(null);
+    setDragCurrent(null);
+  };
+
+  const resetZoom = () => {
+    setZoomRange({ minMidi: null, maxMidi: null });
+  };
+
   if (!pitchData.length) {
     return (
       <div className="text-center text-gray-500 dark:text-gray-400 py-8">
@@ -217,16 +338,34 @@ export default function PianoRoll({ pitchData }: PianoRollProps) {
     );
   }
 
+  const isZoomed = zoomRange.minMidi !== null || zoomRange.maxMidi !== null;
+
   return (
     <div className="relative">
+      <div className="mb-2 flex justify-between items-center">
+        <div className="text-sm text-gray-600 dark:text-gray-300">
+          {isZoomed ? '🔍 拡大表示中' : ''}
+        </div>
+        {isZoomed && (
+          <button
+            onClick={resetZoom}
+            className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded transition-colors"
+          >
+            🔄 ズームリセット
+          </button>
+        )}
+      </div>
+      
       <canvas
         ref={canvasRef}
         className="w-full h-64 border border-gray-300 dark:border-gray-600 rounded-lg cursor-crosshair"
-        onMouseMove={handleMouseMove}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMoveWhileDragging}
+        onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
       />
       
-      {tooltip.visible && (
+      {tooltip.visible && !isDragging && (
         <div
           className="absolute z-10 bg-black text-white p-2 rounded text-sm pointer-events-none"
           style={{
@@ -244,6 +383,7 @@ export default function PianoRoll({ pitchData }: PianoRollProps) {
         <p>💡 ポイントにカーソルを合わせると詳細情報が表示されます</p>
         <p>• 横軸: 時間、縦軸: 音階（ピアノロール表示）</p>
         <p>• 色: 周波数の高低を表現</p>
+        <p>• ドラッグして特定の範囲を拡大表示できます</p>
       </div>
     </div>
   );
