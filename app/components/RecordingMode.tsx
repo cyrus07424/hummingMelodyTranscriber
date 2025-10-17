@@ -31,6 +31,12 @@ export default function RecordingMode() {
 
   const startRecording = async () => {
     try {
+      // Check if there's existing data and confirm deletion
+      if ((audioBlob || pitchData.length > 0 || uploadedFile) && 
+          !window.confirm('既に録音済みのデータがあります。新しい録音を開始すると、既存のデータは削除されます。よろしいですか？')) {
+        return;
+      }
+      
       setError('');
       setPitchData([]);
       setAudioBlob(null);
@@ -153,6 +159,14 @@ export default function RecordingMode() {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    
+    // Check if there's existing data and confirm deletion
+    if ((audioBlob || pitchData.length > 0 || uploadedFile) && 
+        !window.confirm('既に録音済みのデータがあります。新しいファイルをアップロードすると、既存のデータは削除されます。よろしいですか？')) {
+      // Reset the file input to allow re-uploading the same file
+      event.target.value = '';
+      return;
+    }
     
     try {
       setError('');
