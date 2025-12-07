@@ -13,7 +13,7 @@
     "pitchfinder": "^2.3.2",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
-    "wavesurfer.js": "^7.12.0"
+    "wavesurfer.js": "^7.12.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
