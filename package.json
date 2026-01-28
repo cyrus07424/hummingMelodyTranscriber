@@ -22,7 +22,7 @@
     "@types/react-dom": "^19",
     "@types/web": "^0.0.323",
     "eslint": "9.39.2",
-    "eslint-config-next": "16.1.5",
+    "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
