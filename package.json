@@ -12,7 +12,7 @@
     "next": "16.2.6",
     "pitchfinder": "^2.3.4",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "react-dom": "^19.2.7",
     "wavesurfer.js": "^7.12.7"
   },
   "devDependencies": {
